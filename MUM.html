@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MILESHI HORIZON | Sovereign Apex Final</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root { --gold: #d4af37; --bg: #050505; --bio: #00d4ff; --danger: #ff4444; --success: #2ecc71; --card: rgba(18, 18, 18, 0.98); }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
+        body { background: var(--bg); color: #fff; font-size: 11px; overflow-x: hidden; }
+        
+        /* TICKER & HUD */
+        @keyframes marquee { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
+        #global-announcement { background: var(--gold); color: #000; height: 25px; display: none; align-items: center; overflow: hidden; position: fixed; top: 0; width: 100%; z-index: 6000; }
+        .ticker-content { white-space: nowrap; font-size: 9px; font-weight: bold; letter-spacing: 1px; animation: marquee 20s linear infinite; }
+
+        /* NAVIGATION */
+        nav { height: 70px; background: #000; border-bottom: 1px solid #222; display: flex; align-items: center; justify-content: space-between; padding: 0 5%; position: fixed; width: 100%; top: 0; z-index: 5000; }
+        .nav-links span { margin-left: 15px; cursor: pointer; color: #777; text-transform: uppercase; font-size: 8px; letter-spacing: 1px; }
+        .nav-links span:hover { color: var(--gold); }
+        
+        /* UI LAYOUT */
+        .page { display: none; padding: 100px 5% 50px; min-height: 100vh; }
+        .active { display: block !important; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 25px; }
+        .card { background: var(--card); border: 1px solid #222; border-radius: 4px; overflow: hidden; transition: 0.3s; position: relative; }
+        .card:hover { border-color: var(--gold); transform: translateY(-5px); }
+        .card img { width: 100%; height: 180px; object-fit: cover; }
+
+        input, select { width: 100%; padding: 10px; background: #000; border: 1px solid #222; color: #fff; font-size: 10px; margin-top: 5px; outline: none; }
+        .btn { width: 100%; padding: 10px; border: 1px solid var(--gold); background: transparent; color: var(--gold); cursor: pointer; font-size: 9px; font-weight: bold; text-transform: uppercase; margin-top: 8px; transition: 0.2s; }
+        .btn:hover { background: var(--gold); color: #000; }
+
+        /* LOCKDOWN */
+        @keyframes siren { 0%, 100% { box-shadow: inset 0 0 0px rgba(255,0,0,0); } 50% { box-shadow: inset 0 0 100px rgba(255,0,0,0.5); } }
+        #lockdown-overlay { display:none; position:fixed; inset:0; background:rgba(20,0,0,0.95); z-index:100000; flex-direction:column; align-items:center; justify-content:center; text-align:center; border: 10px solid var(--danger); }
+
+        /* GATE */
+        #gate { position: fixed; inset: 0; z-index: 9000; background: linear-gradient(rgba(0,0,0,0.8), rgba(0,0,0,0.9)), url('https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=1600') center/cover; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .scan-bar { width: 100%; height: 2px; background: var(--bio); box-shadow: 0 0 15px var(--bio); position: relative; animation: scan 2s infinite; }
+        @keyframes scan { 0%, 100% { top: 0; } 50% { top: 100px; } }
+    </style>
+</head>
+<body>
+
+<div id="global-announcement"><div class="ticker-content"><span id="announcement-text"></span>&nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;&nbsp;<span id="announcement-text-copy"></span></div></div>
+
+<div id="lockdown-overlay">
+    <i class="fas fa-radiation-alt" style="font-size:80px; color:var(--danger); animation: pulse 1s infinite;"></i>
+    <h1 style="letter-spacing:10px; color:var(--danger); margin: 20px 0;">SOVEREIGN LOCKDOWN</h1>
+    <button class="btn" style="width:200px; color:#fff; border-color:#fff;" onclick="disableLockdown()">AUTHORIZE RESET</button>
+</div>
+
+<div id="gate">
+    <h1 style="color:var(--gold); letter-spacing:10px; margin-bottom:40px;">MILESHI HORIZON</h1>
+    <div id="auth-roles" style="display:flex; gap:15px;">
+        <div onclick="setRole('guest')" style="cursor:pointer; text-align:center; padding:20px; border:1px solid #222; width:110px;"><i class="fas fa-user"></i><p>GUEST</p></div>
+        <div onclick="setRole('admin')" style="cursor:pointer; text-align:center; padding:20px; border:1px solid #222; width:110px;"><i class="fas fa-shield-alt"></i><p>ADMIN</p></div>
+    </div>
+    <div id="login-form" style="display:none; width:300px; margin-top:20px;">
+        <input type="text" id="uid" placeholder="GUEST IDENTITY">
+        <input type="password" id="upin" placeholder="SECURITY PIN (SUPER-LOGS FOR ADMIN)">
+        <button class="btn" onclick="startBio()">SCAN BIOMETRICS</button>
+    </div>
+    <div id="bio-scanner" style="display:none; width:300px; text-align:center; margin-top:20px;">
+        <div style="height:100px; border:1px solid #222; position:relative;"><div class="scan-bar"></div><i class="fas fa-fingerprint" style="font-size:40px; color:var(--bio); margin-top:30px;"></i></div>
+    </div>
+</div>
+
+<div id="app" style="display:none;">
+    <nav id="main-nav">
+        <div style="color:var(--gold); font-weight:bold; letter-spacing:2px;">MILESHI HORIZON</div>
+        <div id="threat-level" style="padding: 4px 10px; border: 1px solid var(--success); color: var(--success); font-size: 7px; border-radius:20px;">STATUS: SECURE</div>
+        <div class="nav-links">
+            <span onclick="go('suites')">Suites</span>
+            <span onclick="go('folio')">Folio <b id="cart-count">(0)</b></span>
+            <span id="nav-admin" style="display:none; color:var(--success);" onclick="go('admin')">Admin Panel</span>
+            <span onclick="location.reload()" style="color:var(--danger)">Logout</span>
+        </div>
+    </nav>
+
+    <section id="suites" class="page active"><div class="grid" id="suites-grid"></div></section>
+
+    <section id="folio" class="page">
+        <div id="reputation-hud" style="background: rgba(212, 175, 55, 0.05); border: 1px solid var(--gold); padding: 20px; margin-bottom: 20px; display: flex; align-items: center; gap: 20px;">
+            <i class="fas fa-crown" style="font-size: 30px; color: var(--gold);"></i>
+            <div><h2 id="rep-score">LEVEL: 0</h2><p id="rep-tier" style="color: var(--bio);">TIER: ASPIRANT</p></div>
+        </div>
+        <div id="folio-list"></div>
+        <div style="text-align:right; margin-top:30px; border-top:1px solid #222; padding-top:20px;">
+            <h3 id="folio-total">TOTAL: KSH 0</h3>
+            <button class="btn" style="width:200px; border-color:var(--success); color:var(--success)" onclick="$('payment-modal').style.display='flex'">AUTHORIZE CHECKOUT</button>
+        </div>
+    </section>
+
+    <section id="admin" class="page">
+        <h2 style="color:var(--success)">SYSTEM COMMAND & AUDIT</h2>
+        <div id="log-box" style="background:#000; color:#0f0; padding:15px; height:200px; overflow-y:auto; font-family:monospace; margin:20px 0; border:1px solid #222; font-size:9px;"></div>
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px;">
+            <div style="padding:15px; border:1px solid var(--danger);"><button class="btn" style="border-color:var(--danger); color:var(--danger)" onclick="triggerLockdown()">FORCE LOCKDOWN</button></div>
+            <div style="padding:15px; border:1px solid var(--gold);"><input type="text" id="vvip-user" placeholder="GUEST NAME"><input type="number" id="vvip-pts" placeholder="PTS"><button class="btn" onclick="giftReputation()">GIFT REPUTATION</button></div>
+        </div>
+        <div style="margin-top:20px; padding:15px; border:1px solid var(--bio);"><input type="text" id="admin-broadcast-input" placeholder="BROADCAST MESSAGE..."><button class="btn" style="border-color:var(--bio); color:var(--bio);" onclick="broadcastMessage()">DISPATCH ALERT</button></div>
+    </section>
+
+    <div id="chat-widget" style="position:fixed; bottom:20px; right:20px; z-index:7000; width:250px;">
+        <div id="chat-box" style="display:none; background:#111; border:1px solid var(--gold); height:300px; flex-direction:column; margin-bottom:10px;">
+            <div style="background:var(--gold); color:#000; padding:10px; font-weight:bold; font-size:8px;">SECURE COMMS</div>
+            <div id="chat-messages" style="flex:1; overflow-y:auto; padding:10px; font-size:9px; color:#ccc;"></div>
+            <div style="display:flex; border-top:1px solid #222;"><input type="text" id="chat-input" placeholder="Message Staff..." style="border:none; margin:0;"><button class="btn" style="width:60px; margin:0; border:none;" onclick="sendChat()">SEND</button></div>
+        </div>
+        <button class="btn" style="border-radius:50px; height:50px; width:50px; float:right;" onclick="toggleChat()"><i class="fas fa-comments"></i></button>
+    </div>
+</div>
+
+<div id="payment-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.9); z-index:20000; align-items:center; justify-content:center;">
+    <div style="background:#111; padding:30px; border:1px solid var(--gold); width:320px;">
+        <h3 style="color:var(--gold)">AUTHORIZE PAYMENT</h3>
+        <input type="text" id="pay-contact" placeholder="PHONE OR EMAIL FOR RECEIPT">
+        <button class="btn" onclick="processPayment()">CONFIRM</button>
+        <button class="btn" style="border:none;" onclick="$('payment-modal').style.display='none'">CANCEL</button>
+    </div>
+</div>
+
+<div id="receipt-area" style="display:none; background:#fff; color:#000; padding:40px; width:500px; font-family:monospace;">
+    <center><h2>MILESHI HORIZON</h2><p>Official Invoice</p></center>
+    <hr><div id="receipt-list" style="margin:20px 0;"></div><hr>
+    <div id="receipt-totals" style="text-align:right;"></div>
+    <center><div id="qrcode" style="margin-top:20px;"></div></center>
+</div>
+
+<script>
+    const $ = (id) => document.getElementById(id);
+    let inventory = [], cart = [], currentRole = '', activeUser = '', reputation = 0;
+
+    function logAction(action, color = "#0f0") {
+        const log = $('log-box');
+        if(!log) return;
+        log.innerHTML = `<div style="color:${color}">[${new Date().toLocaleTimeString()}] ${action}</div>` + log.innerHTML;
+    }
+
+    function setRole(r) { currentRole = r; $('auth-roles').style.display='none'; $('login-form').style.display='block'; }
+    function startBio() { $('login-form').style.display='none'; $('bio-scanner').style.display='block'; setTimeout(executeLogin, 2000); }
+
+    function executeLogin() {
+        const u = $('uid').value.toUpperCase() || "ANONYMOUS";
+        const p = $('upin').value;
+
+        if (currentRole === 'admin') {
+            if (p !== 'SUPER-LOGS') { alert("ACCESS DENIED"); location.reload(); return; }
+            $('nav-admin').style.display = 'inline';
+        }
+
+        activeUser = u;
+        reputation = parseInt(localStorage.getItem(`rep_${activeUser}`)) || 0;
+        $('gate').style.display='none'; $('app').style.display='block';
+        generateData(); render(); renderReputation(); checkBroadcasts();
+        logAction(`Session Started: ${activeUser} [${currentRole}]`);
+    }
+
+    function generateData() {
+        const s = ['Presidential Suite', 'Royal Penthouse', 'Diplomatic Wing', 'Executive Skybox'];
+        inventory = s.map((name, i) => ({
+            id: 'S'+i, name, price: 100000 + (i*50000), status: 'available',
+            img: `https://images.unsplash.com/photo-1590490360182-c33d57733427?w=400`
+        }));
+    }
+
+    function render() {
+        $('suites-grid').innerHTML = inventory.map(i => `
+            <div class="card">
+                <img src="${i.img}">
+                <div style="padding:15px;">
+                    <h6>${i.name}</h6>
+                    <p style="color:var(--gold)">KSH ${i.price.toLocaleString()}</p>
+                    ${i.status==='available' ? `
+                        <select id="req-${i.id}"><option value="None">No Requests</option><option value="Armored Transport">Armored Transport</option><option value="Butler">Butler</option></select>
+                        <button class="btn" onclick="book('${i.id}')">Acquire</button>` : '<button class="btn" disabled>Occupied</button>'}
+                </div>
+            </div>`).join('');
+        const occ = inventory.filter(x => x.status === 'occupied').length;
+        $('threat-level').innerText = occ > 2 ? "STATUS: ELEVATED" : "STATUS: SECURE";
+        $('threat-level').style.color = occ > 2 ? "orange" : "var(--success)";
+    }
+
+    function book(id) {
+        const itm = inventory.find(x => x.id === id);
+        itm.status = 'occupied';
+        cart.push({...itm, req: $(`req-${id}`).value});
+        updateFolio(); render();
+        logAction(`Booking: ${itm.name} | Req: ${itm.req}`, "var(--gold)");
+    }
+
+    function renderReputation() {
+        $('rep-score').innerText = `LEVEL: ${reputation}`;
+        const t = $('rep-tier');
+        if(reputation >= 500) { t.innerText = "TIER: ILLUMINATED"; t.style.color = "magenta"; }
+        else if(reputation >= 100) { t.innerText = "TIER: SOVEREIGN"; t.style.color = "var(--gold)"; }
+        else { t.innerText = "TIER: ASPIRANT"; t.style.color = "#777"; }
+    }
+
+    function updateFolio() {
+        $('cart-count').innerText = `(${cart.length})`;
+        const sub = cart.reduce((a, b) => a + b.price, 0);
+        const disc = sub * (reputation >= 500 ? 0.2 : (reputation >= 100 ? 0.1 : 0));
+        $('folio-total').innerHTML = `SUB: KSH ${sub.toLocaleString()}<br>TIER DISCOUNT: -KSH ${disc.toLocaleString()}<br>TOTAL: KSH ${(sub-disc).toLocaleString()}`;
+        $('folio-list').innerHTML = cart.map(i => `<div style="padding:10px; border-bottom:1px solid #222;">${i.name} (${i.req})</div>`).join('');
+    }
+
+    function processPayment() {
+        const contact = $('pay-contact').value;
+        if(!contact) return alert("Contact Required");
+        const sub = cart.reduce((a, b) => a + b.price, 0);
+        const disc = sub * (reputation >= 500 ? 0.2 : (reputation >= 100 ? 0.1 : 0));
+        const total = (sub - disc) * 1.16;
+        const ref = `MH-${Math.random().toString(36).substr(2, 5).toUpperCase()}`;
+
+        $('receipt-list').innerHTML = cart.map(i => `<p>${i.name} (${i.req}) - KSH ${i.price.toLocaleString()}</p>`).join('');
+        $('receipt-totals').innerHTML = `<h3>Total: KSH ${total.toLocaleString()}</h3>`;
+        new QRCode($("qrcode"), { text: ref, width: 80, height: 80 });
+        $('receipt-area').style.display = 'block';
+
+        reputation += (10 + Math.floor(sub/10000));
+        localStorage.setItem(`rep_${activeUser}`, reputation);
+        
+        html2pdf().from($('receipt-area')).save(`${ref}.pdf`).then(() => {
+            alert("Receipt Secured & Dispatched.");
+            location.reload();
+        });
+    }
+
+    function triggerLockdown() { $('lockdown-overlay').style.display = 'flex'; logAction("!!! LOCKDOWN !!!", "red"); }
+    function disableLockdown() { if(prompt("RESET CODE:") === "RESET-HORIZON") $('lockdown-overlay').style.display = 'none'; }
+
+    function giftReputation() {
+        const u = $('vvip-user').value.toUpperCase(), p = parseInt($('vvip-pts').value);
+        let r = parseInt(localStorage.getItem(`rep_${u}`)) || 0;
+        localStorage.setItem(`rep_${u}`, r + p);
+        alert("Gift Sent");
+    }
+
+    function broadcastMessage() {
+        const m = $('admin-broadcast-input').value;
+        localStorage.setItem('global_broadcast', m);
+        displayBroadcast(m);
+    }
+
+    function displayBroadcast(m) {
+        $('global-announcement').style.display = 'flex';
+        $('main-nav').style.top = '25px';
+        $('announcement-text').innerText = `ESTATE ALERT: ${m}`;
+        $('announcement-text-copy').innerText = `ESTATE ALERT: ${m}`;
+    }
+
+    function checkBroadcasts() { const m = localStorage.getItem('global_broadcast'); if(m) displayBroadcast(m); }
+
+    function toggleChat() { const b = $('chat-box'); b.style.display = b.style.display === 'none' ? 'flex' : 'none'; }
+    function sendChat() {
+        const m = $('chat-input').value; if(!m) return;
+        const box = $('chat-messages');
+        box.innerHTML += `<div><b style="color:var(--bio)">ME:</b> ${m}</div>`;
+        logAction(`Chat [${activeUser}]: ${m}`, "var(--bio)");
+        if(m.toLowerCase().includes("help")) {
+            setTimeout(() => { box.innerHTML += `<div><b style="color:var(--gold)">AI:</b> Protocols active. Assistance dispatched.</div>`; box.scrollTop = box.scrollHeight; }, 1000);
+        }
+        $('chat-input').value = ""; box.scrollTop = box.scrollHeight;
+    }
+
+    function go(p) { document.querySelectorAll('.page').forEach(x => x.classList.remove('active')); $(p).classList.add('active'); }
+</script>
+</body>
+</html>
